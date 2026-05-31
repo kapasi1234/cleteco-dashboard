@@ -350,13 +350,23 @@ with tabs[1]:
         st.warning("No Sentinel-2 scene.")
     else:
         idx = fetch_indices(lat, lon, s2date)
-        valid = idx["mask"].sum()
         st.caption(f"Scene {s2date} · {cloud:.0f}% cloud · all values from raw reflectance")
+        # single-label classification so the four cards are consistent and sum to ~100%
+        ndvi, ndwi, ndbi, bsi = idx["ndvi"], idx["ndwi"], idx["ndbi"], idx["bsi"]
+        vmask = np.isfinite(ndvi)
+        cls = np.full(ndvi.shape, -1, dtype=int)
+        cls[vmask & (ndwi > 0.0)] = 0
+        r = vmask & (cls == -1); cls[r & (ndvi > 0.45)] = 1
+        r = vmask & (cls == -1); cls[r & (ndvi > 0.25)] = 2
+        r = vmask & (cls == -1); cls[r & (ndbi >= bsi)] = 3
+        r = vmask & (cls == -1); cls[r] = 4
+        tot = max(int(vmask.sum()), 1)
         m = st.columns(4)
-        m[0].metric("Green cover", f"{100*(idx['ndvi']>0.3).sum()/valid:.0f}%")
-        m[1].metric("Open water", f"{100*(idx['ndwi']>0).sum()/valid:.0f}%")
-        m[2].metric("Bare ground", f"{100*(idx['bsi']>0.1).sum()/valid:.0f}%")
-        m[3].metric("Built-up", f"{100*(idx['ndbi']>0).sum()/valid:.0f}%")
+        m[0].metric("Vegetation", f"{100*((cls==1)|(cls==2)).sum()/tot:.0f}%")
+        m[1].metric("Open water", f"{100*(cls==0).sum()/tot:.0f}%")
+        m[2].metric("Bare ground", f"{100*(cls==4).sum()/tot:.0f}%")
+        m[3].metric("Built-up", f"{100*(cls==3).sum()/tot:.0f}%")
+        st.caption("Single-label classification — these four sum to ~100% (each pixel counted once).")
         panels = [("NDVI — vegetation", "ndvi", "RdYlGn", -0.2, 0.8),
                   ("NDMI — plant moisture", "ndmi", "BrBG", -0.5, 0.5),
                   ("NDWI — water", "ndwi", "Blues", -0.3, 0.6),

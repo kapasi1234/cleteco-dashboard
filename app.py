@@ -337,9 +337,11 @@ with tabs[0]:
         if s1date:
             st.caption(f"Sentinel-1 radar (cloud-proof): {s1date}")
             img = fetch_png(lat, lon, s1date, "sentinel-1-grd", RADAR_SCRIPT)
-            fig, ax = plt.subplots(figsize=(6, 6)); ax.imshow(img)
+            fig, ax = plt.subplots(figsize=(5, 5)); ax.imshow(img)
             ax.set_title("Radar (VV/VH)"); ax.axis("off")
-            st.pyplot(fig)
+            rc1, rc2, rc3 = st.columns([1, 1, 1])
+            with rc2:
+                st.pyplot(fig, use_container_width=True)
 
 # ---- TAB: Indices ----
 with tabs[1]:

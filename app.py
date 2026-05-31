@@ -57,6 +57,19 @@ def get_client():
 def get_token():
     return SentinelHubSession(config=get_config()).token["access_token"]
 
+def _auth_check():
+    cid = st.secrets.get("CDSE_CLIENT_ID", "")
+    csec = st.secrets.get("CDSE_CLIENT_SECRET", "")
+    st.caption(f"id ends …{cid[-6:]} · id len {len(cid)} · secret len {len(csec)}")
+    try:
+        get_token()
+        st.success("✅ CDSE auth OK")
+    except Exception as e:
+        st.error(f"❌ CDSE rejected credentials: {e}")
+        st.stop()
+
+_auth_check()
+
 # =============================================================================
 # GEOMETRY + GENERIC HELPERS
 # =============================================================================
